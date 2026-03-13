@@ -1,8 +1,11 @@
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.AffineTransform;
-import java.util.*;
+import java.util.ArrayList; // ✅ Specific, not wildcard
+import java.util.Random;
 import javax.swing.*;
+
+// Timer will be javax.swing.Timer automatically
 
 /*
     Restored by Jayden + Qwen. Your vision, intact.
@@ -685,92 +688,91 @@ public class ToolboxApp {
         });
 
         // === CIRCUIT EDITOR ACTION ===
-        btnCircuit.addActionListener(e -> {
-            // === CIRCUIT EDITOR ACTION (FIXED) ===
-            btnCircuit.addActionListener(ev -> {
-                contextLabel.setText("⚡ CIRCUIT EDITOR");
-                middlePanel.removeAll();
-                rightPanel.removeAll();
 
-                // ✅ Create CircuitPanel instance
-                CircuitPanel cp = new CircuitPanel();
-                rightPanel.add(cp, BorderLayout.CENTER); // ✅ Add with BorderLayout.CENTER
-                rightPanel.revalidate(); // ✅ Recalculate layout
-                rightPanel.repaint(); // ✅ Redraw
+        // === CIRCUIT EDITOR ACTION (FIXED) ===
+        btnCircuit.addActionListener(evj -> {
+            contextLabel.setText("⚡ CIRCUIT EDITOR");
+            middlePanel.removeAll();
+            rightPanel.removeAll();
 
-                middlePanel.add(Box.createRigidArea(new Dimension(0, 20)));
+            // ✅ Create CircuitPanel instance
+            CircuitPanel cp = new CircuitPanel();
+            rightPanel.add(cp, BorderLayout.CENTER); // ✅ Add with BorderLayout.CENTER
+            rightPanel.revalidate(); // ✅ Recalculate layout
+            rightPanel.repaint(); // ✅ Redraw
 
-                JLabel lbl = new JLabel("⚡ COMPONENTS");
-                lbl.setFont(new Font("SansSerif", Font.BOLD, 14));
-                lbl.setAlignmentX(Component.CENTER_ALIGNMENT);
-                middlePanel.add(lbl);
-                middlePanel.add(Box.createRigidArea(new Dimension(0, 20)));
+            middlePanel.add(Box.createRigidArea(new Dimension(0, 20)));
 
-                // ✅ Rotation control (connected to cp)
-                JLabel rotLabel = new JLabel("Rotation (°):");
-                rotLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-                middlePanel.add(rotLabel);
+            JLabel lbl = new JLabel("⚡ COMPONENTS");
+            lbl.setFont(new Font("SansSerif", Font.BOLD, 14));
+            lbl.setAlignmentX(Component.CENTER_ALIGNMENT);
+            middlePanel.add(lbl);
+            middlePanel.add(Box.createRigidArea(new Dimension(0, 20)));
 
-                JTextField rotField = new JTextField("0");
-                rotField.setColumns(3);
-                rotField.setMaximumSize(new Dimension(60, 30));
-                rotField.setAlignmentX(Component.CENTER_ALIGNMENT);
-                middlePanel.add(rotField);
-                middlePanel.add(Box.createRigidArea(new Dimension(0, 5)));
+            // ✅ Rotation control (connected to cp)
+            JLabel rotLabel = new JLabel("Rotation (°):");
+            rotLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+            middlePanel.add(rotLabel);
 
-                JButton btnSetRot = new JButton("🔄 Set");
-                btnSetRot.setAlignmentX(Component.CENTER_ALIGNMENT);
-                btnSetRot.setMaximumSize(new Dimension(70, 30));
-                btnSetRot.addActionListener(ev -> {
-                    try {
-                        double rot = Double.parseDouble(rotField.getText());
-                        cp.setRotation(rot); // ✅ Connected!
-                        System.out.println("🔄 Rotation set to: " + rot + "°");
-                    } catch (NumberFormatException ex) {
-                        JOptionPane.showMessageDialog(
-                            frame,
-                            "Enter a number!",
-                            "Error",
-                            JOptionPane.ERROR_MESSAGE
-                        );
-                    }
-                });
-                middlePanel.add(btnSetRot);
-                middlePanel.add(Box.createRigidArea(new Dimension(0, 20)));
+            JTextField rotField = new JTextField("0");
+            rotField.setColumns(3);
+            rotField.setMaximumSize(new Dimension(60, 30));
+            rotField.setAlignmentX(Component.CENTER_ALIGNMENT);
+            middlePanel.add(rotField);
+            middlePanel.add(Box.createRigidArea(new Dimension(0, 5)));
 
-                // ✅ Component buttons (connected to cp)
-                String[] comps = {
-                    "Resistor",
-                    "Capacitor",
-                    "Voltage Source",
-                    "Wire",
-                };
-                for (String comp : comps) {
-                    JButton btn = new JButton(comp);
-                    btn.setAlignmentX(Component.CENTER_ALIGNMENT);
-                    btn.setMaximumSize(new Dimension(150, 35));
-                    btn.addActionListener(ev -> {
-                        cp.setSelectedType(comp); // ✅ Connected!
-                        System.out.println("🔌 Selected: " + comp);
-                    });
-                    middlePanel.add(btn);
-                    middlePanel.add(Box.createRigidArea(new Dimension(0, 5)));
+            JButton btnSetRot = new JButton("🔄 Set");
+            btnSetRot.setAlignmentX(Component.CENTER_ALIGNMENT);
+            btnSetRot.setMaximumSize(new Dimension(70, 30));
+            btnSetRot.addActionListener(ev -> {
+                try {
+                    double rot = Double.parseDouble(rotField.getText());
+                    cp.setRotation(rot); // ✅ Connected!
+                    System.out.println("🔄 Rotation set to: " + rot + "°");
+                } catch (NumberFormatException ex) {
+                    JOptionPane.showMessageDialog(
+                        frame,
+                        "Enter a number!",
+                        "Error",
+                        JOptionPane.ERROR_MESSAGE
+                    );
                 }
-
-                // ✅ Clear button (connected to cp)
-                JButton btnClear = new JButton("🗑️ Clear");
-                btnClear.setAlignmentX(Component.CENTER_ALIGNMENT);
-                btnClear.setMaximumSize(new Dimension(150, 35));
-                btnClear.addActionListener(ev -> {
-                    cp.clear(); // ✅ Connected!
-                    System.out.println("🗑️ Circuit cleared");
-                });
-                middlePanel.add(Box.createRigidArea(new Dimension(0, 10)));
-                middlePanel.add(btnClear);
-
-                middlePanel.revalidate();
-                middlePanel.repaint();
             });
+            middlePanel.add(btnSetRot);
+            middlePanel.add(Box.createRigidArea(new Dimension(0, 20)));
+
+            // ✅ Component buttons (connected to cp)
+            String[] comps = {
+                "Resistor",
+                "Capacitor",
+                "Voltage Source",
+                "Wire",
+            };
+            for (String comp : comps) {
+                JButton btn = new JButton(comp);
+                btn.setAlignmentX(Component.CENTER_ALIGNMENT);
+                btn.setMaximumSize(new Dimension(150, 35));
+                btn.addActionListener(ev -> {
+                    cp.setSelectedType(comp); // ✅ Connected!
+                    System.out.println("🔌 Selected: " + comp);
+                });
+                middlePanel.add(btn);
+                middlePanel.add(Box.createRigidArea(new Dimension(0, 5)));
+            }
+
+            // ✅ Clear button (connected to cp)
+            JButton btnClear = new JButton("🗑️ Clear");
+            btnClear.setAlignmentX(Component.CENTER_ALIGNMENT);
+            btnClear.setMaximumSize(new Dimension(150, 35));
+            btnClear.addActionListener(ev -> {
+                cp.clear(); // ✅ Connected!
+                System.out.println("🗑️ Circuit cleared");
+            });
+            middlePanel.add(Box.createRigidArea(new Dimension(0, 10)));
+            middlePanel.add(btnClear);
+
+            middlePanel.revalidate();
+            middlePanel.repaint();
         });
 
         // === LINEAR GRAPHER ACTION ===
