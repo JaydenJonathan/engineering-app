@@ -1,7 +1,7 @@
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.AffineTransform;
-import java.util.ArrayList;
+import java.util.*;
 import javax.swing.*;
 
 /*
@@ -687,7 +687,7 @@ public class ToolboxApp {
         // === CIRCUIT EDITOR ACTION ===
         btnCircuit.addActionListener(e -> {
             // === CIRCUIT EDITOR ACTION (FIXED) ===
-            btnCircuit.addActionListener(e -> {
+            btnCircuit.addActionListener(ev -> {
                 contextLabel.setText("⚡ CIRCUIT EDITOR");
                 middlePanel.removeAll();
                 rightPanel.removeAll();
