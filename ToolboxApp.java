@@ -338,6 +338,9 @@ class CircuitPanel extends JPanel {
 // ============================================
 // GRAPH PANEL (RESTORED SCALING + CLIPPING)
 // ============================================
+// ============================================
+// GRAPH PANEL (DARK THEME + ENHANCED VISUALS)
+// ============================================
 class GraphPanel extends JPanel {
 
     private double[] xValues, yValues;
@@ -347,7 +350,7 @@ class GraphPanel extends JPanel {
 
     public GraphPanel() {
         this.setPreferredSize(new Dimension(450, 450));
-        this.setBackground(new Color(25, 25, 30));
+        this.setBackground(new Color(25, 25, 30)); // ✅ Dark background (matches PhysicsPanel)
     }
 
     public void plotData(double[] x, double[] y) {
@@ -368,28 +371,39 @@ class GraphPanel extends JPanel {
         int ox = (getWidth() - gridSize) / 2;
         int oy = (getHeight() - gridSize) / 2;
 
-        // Draw grid
-        g2d.setColor(Color.LIGHT_GRAY);
+        // ✅ Draw dark grid (matches PhysicsPanel)
+        g2d.setColor(new Color(45, 45, 55)); // Subtle grid lines
         for (int i = 0; i <= range; i++) {
             g2d.drawLine(ox + i * scale, oy, ox + i * scale, oy + gridSize);
             g2d.drawLine(ox, oy + i * scale, ox + gridSize, oy + i * scale);
         }
-        g2d.setColor(Color.BLACK);
+
+        // ✅ Draw border
+        g2d.setColor(new Color(100, 100, 120));
         g2d.drawRect(ox, oy, gridSize, gridSize);
 
-        // Draw axes
+        // ✅ Draw axes (brighter for contrast)
         g2d.setStroke(new BasicStroke(2));
+        g2d.setColor(new Color(180, 180, 200)); // Light gray axes
         int center = gridSize / 2;
-        g2d.drawLine(ox, oy + center, ox + gridSize, oy + center);
-        g2d.drawLine(ox + center, oy, ox + center, oy + gridSize);
-        g2d.setFont(new Font("Monospaced", Font.BOLD, 12));
-        g2d.drawString("(0,0)", ox + 5, oy + center + 15);
+        g2d.drawLine(ox, oy + center, ox + gridSize, oy + center); // X-axis
+        g2d.drawLine(ox + center, oy, ox + center, oy + gridSize); // Y-axis
 
-        // Draw graph with clipping
+        // ✅ Axis labels
+        g2d.setFont(new Font("Monospaced", Font.BOLD, 11));
+        g2d.setColor(new Color(200, 200, 220));
+        g2d.drawString("(0,0)", ox + 5, oy + center + 15);
+        g2d.drawString("20", ox + gridSize - 25, oy + center + 15);
+        g2d.drawString("-20", ox + 5, oy + center + 15);
+        g2d.drawString("20", ox + center + 5, oy + 15);
+        g2d.drawString("-20", ox + center + 5, oy + gridSize - 5);
+
+        // ✅ Draw graph with clipping + glow effect
         if (xValues != null && yValues != null) {
-            g2d.setColor(Color.BLUE);
-            g2d.setStroke(new BasicStroke(3));
-            g2d.setClip(ox, oy, gridSize, gridSize); // ✅ Clip to grid
+            // Optional: Draw glow shadow first
+            g2d.setColor(new Color(70, 130, 230, 100)); // Semi-transparent blue
+            g2d.setStroke(new BasicStroke(6)); // Thicker for glow
+            g2d.setClip(ox, oy, gridSize, gridSize);
 
             for (int i = 0; i < xValues.length - 1; i++) {
                 int x1 = ox + (int) ((xValues[i] + range / 2.0) * scale);
@@ -398,7 +412,18 @@ class GraphPanel extends JPanel {
                 int y2 = oy + (int) ((range / 2.0 - yValues[i + 1]) * scale);
                 g2d.drawLine(x1, y1, x2, y2);
             }
-            g2d.setClip(null); // ✅ Reset clip
+
+            // Draw sharp line on top
+            g2d.setColor(new Color(100, 200, 255)); // Bright cyan-blue
+            g2d.setStroke(new BasicStroke(2)); // Thin for precision
+            for (int i = 0; i < xValues.length - 1; i++) {
+                int x1 = ox + (int) ((xValues[i] + range / 2.0) * scale);
+                int y1 = oy + (int) ((range / 2.0 - yValues[i]) * scale);
+                int x2 = ox + (int) ((xValues[i + 1] + range / 2.0) * scale);
+                int y2 = oy + (int) ((range / 2.0 - yValues[i + 1]) * scale);
+                g2d.drawLine(x1, y1, x2, y2);
+            }
+            g2d.setClip(null);
         }
     }
 }
