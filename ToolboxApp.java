@@ -17,6 +17,12 @@ import javax.swing.*;
 
 class CelestialBody {
 
+    double x, y; // Position (Registers)
+    double vx, vy; // Velocity (Momentum)
+    double mass; // Gravity Weight
+    int size;
+
+    // Constructor: Initialize the 'Register' values
     public CelestialBody(
         double x,
         double y,
@@ -29,52 +35,62 @@ class CelestialBody {
         this.vx = vx;
         this.vy = vy;
         this.mass = mass;
-        this.size = (int) Math.max(10, Math.log(mass) * 5); // Scale size by mass
-        this.color = Color.getHSBColor((float) Math.random(), 0.7f, 0.9f);
+        this.size = (int) Math.max(10, Math.sqrt(mass));
     }
 
+    // Task 1: Implementation of Distance
     public double getDistanceTo(CelestialBody other) {
+        // LOGIC: Pythagorean Theorem (a^2 + b^2 = c^2)
         double dx = other.x - this.x;
         double dy = other.y - this.y;
         return Math.sqrt(dx * dx + dy * dy);
     }
 
+    // Task 2: Implementation of Force
     public void applyForce(double fx, double fy) {
-        // F = ma  =>  a = F / m
-        this.vx += fx / mass;
-        this.vy += fy / mass;
-    }
-
-    public void update() {
-        this.x += this.vx;
-        this.y += this.vy;
-    }
-
-    public void calculateGravity(CelestialBody other) {
-        double G = 1.0; // The Universal Constant (tune this for your sim)
-        double dx = other.x - this.x;
-        double dy = other.y - this.y;
-        double r = getDistanceTo(other);
-
-        // Softening factor: prevents "Infinity" if planets overlap
-        if (r < 5) r = 5;
-
-        // Newton's Law: F = G * (m1 * m2) / r^2
-        double forceMag = (G * this.mass * other.mass) / (r * r);
-
-        // Directional components (Unit Vector * Force)
-        double fx = forceMag * (dx / r);
-        double fy = forceMag * (dy / r);
-
-        this.applyForce(fx, fy);
+        // LOGIC: Newton's Second Law (a = F / m)
+        this.vx += fx / this.mass;
+        this.vy += fy / this.mass;
     }
 }
 
 class CelestialPanel extends JPanel implements ActionListener {
 
-    private ArrayList<CelestialBody> cbs = new ArrayList<>();
+    private ArrayList<CelestialBody> bodies = new ArrayList<>();
     private Timer timer;
-    private double gravity;
+
+    public CelestialPanel() {
+        // Add a "Sun" (Static heavy mass)
+        bodies.add(new CelestialBody(400, 200, 0, 0, 5000));
+        // Add a "Planet" (Moving mass)
+        bodies.add(new CelestialBody(400, 100, 5, 0, 10));
+
+        timer = new Timer(16, this); // ~60 FPS
+        timer.start();
+    }
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        // NESTED LOOP: Every body pulls every other body
+        for (CelestialBody a : bodies) {
+            for (CelestialBody b : bodies) {
+                if (a == b) continue; // Don't pull yourself!
+
+                // YOUR IMPLEMENTATION GOES HERE:
+                // 1. Get distance (r)
+                // 2. Calculate force (G * m1 * m2 / r^2)
+                // 3. Calculate components (dx/r and dy/r)
+                // 4. Apply force to 'a'
+            }
+        }
+
+        // Final Step: Update positions
+        for (CelestialBody b : bodies) {
+            b.x += b.vx;
+            b.y += b.vy;
+        }
+        repaint();
+    }
 }
 
 // ============================================
