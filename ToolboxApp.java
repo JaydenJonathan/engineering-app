@@ -56,6 +56,8 @@ class CelestialBody {
 
 class CelestialPanel extends JPanel implements ActionListener {
 
+    private Point mousePressPoint;
+    private Point mouseDragPoint;
     private ArrayList<CelestialBody> bodies = new ArrayList<>();
     private Timer timer;
 
@@ -87,6 +89,29 @@ class CelestialPanel extends JPanel implements ActionListener {
             b.y += b.vy;
         }
         repaint();
+    }
+
+    public void mousePressed(MouseEvent e) {
+        mousePressPoint = e.getPoint();
+    }
+
+    public void mouseDragged(MouseEvent e) {
+        mouseDragPoint = e.getPoint();
+        repaint();
+    }
+
+    // 3. When you release, CALCULATE THE LAUNCH
+    public void mouseReleased(MouseEvent e) {
+        double dx = (mousePressPoint.x - e.getX()) * 0.1; // Scale the velocity
+        double dy = (mousePressPoint.y - e.getY()) * 0.1;
+
+        // Create the planet with the "flick" velocity
+        bodies.add(
+            new CelestialBody(mousePressPoint.x, mousePressPoint.y, dx, dy, 10)
+        );
+
+        mousePressPoint = null;
+        mouseDragPoint = null;
     }
 
     public void addPlanet(int x, int y) {
