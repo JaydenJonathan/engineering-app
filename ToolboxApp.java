@@ -76,11 +76,8 @@ class CelestialPanel extends JPanel implements ActionListener {
             for (CelestialBody b : bodies) {
                 if (a == b) continue; // Don't pull yourself!
 
-                // YOUR IMPLEMENTATION GOES HERE:
-                // 1. Get distance (r)
-                // 2. Calculate force (G * m1 * m2 / r^2)
-                // 3. Calculate components (dx/r and dy/r)
-                // 4. Apply force to 'a'
+                // son why do i have to type everything 😭😭
+                double r = a.getDistanceTo(b);
             }
         }
 
@@ -90,6 +87,16 @@ class CelestialPanel extends JPanel implements ActionListener {
             b.y += b.vy;
         }
         repaint();
+    }
+
+    public void addPlanet(int x, int y) {
+        // son im crying 😭(common instagram meme)
+        bodies.add(new CelestialBody(x, y, 0, 0, 10));
+    }
+
+    public void addStar(int x, int y) {
+        // son im crying 😭(common instagram meme)
+        bodies.add(new CelestialBody(x, y, 0, 0, 5000));
     }
 }
 
