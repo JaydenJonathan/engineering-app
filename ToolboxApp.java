@@ -1,7 +1,7 @@
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.AffineTransform;
-import java.util.ArrayList; // ✅ Specific, not wildcard
+import java.util.ArrayList;
 import java.util.Random;
 import javax.swing.*;
 
@@ -10,6 +10,72 @@ import javax.swing.*;
 /*
     Restored by Jayden + Qwen. Your vision, intact.
 */
+
+// ============================================
+// CELESTIAL ENGINE
+// ============================================
+
+class CelestialBody {
+
+    public CelestialBody(
+        double x,
+        double y,
+        double vx,
+        double vy,
+        double mass
+    ) {
+        this.x = x;
+        this.y = y;
+        this.vx = vx;
+        this.vy = vy;
+        this.mass = mass;
+        this.size = (int) Math.max(10, Math.log(mass) * 5); // Scale size by mass
+        this.color = Color.getHSBColor((float) Math.random(), 0.7f, 0.9f);
+    }
+
+    public double getDistanceTo(CelestialBody other) {
+        double dx = other.x - this.x;
+        double dy = other.y - this.y;
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    public void applyForce(double fx, double fy) {
+        // F = ma  =>  a = F / m
+        this.vx += fx / mass;
+        this.vy += fy / mass;
+    }
+
+    public void update() {
+        this.x += this.vx;
+        this.y += this.vy;
+    }
+
+    public void calculateGravity(CelestialBody other) {
+        double G = 1.0; // The Universal Constant (tune this for your sim)
+        double dx = other.x - this.x;
+        double dy = other.y - this.y;
+        double r = getDistanceTo(other);
+
+        // Softening factor: prevents "Infinity" if planets overlap
+        if (r < 5) r = 5;
+
+        // Newton's Law: F = G * (m1 * m2) / r^2
+        double forceMag = (G * this.mass * other.mass) / (r * r);
+
+        // Directional components (Unit Vector * Force)
+        double fx = forceMag * (dx / r);
+        double fy = forceMag * (dy / r);
+
+        this.applyForce(fx, fy);
+    }
+}
+
+class CelestialPanel extends JPanel implements ActionListener {
+
+    private ArrayList<CelestialBody> cbs = new ArrayList<>();
+    private Timer timer;
+    private double gravity;
+}
 
 // ============================================
 // PHYSICS ENGINE (BUILDING + SIMULATION)
