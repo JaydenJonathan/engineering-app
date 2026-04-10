@@ -2,6 +2,9 @@ import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.AffineTransform;
 import java.util.ArrayList;
+import java.util.Dictionary;
+import java.util.Enumeration;
+import java.util.Hashtable;
 import java.util.Random;
 import javax.swing.*;
 
@@ -11,8 +14,57 @@ import javax.swing.*;
     Restored by Jayden + Qwen. Your vision, intact.
 */
 
+// fuck no i aint studying for PAK(pendidikan agama kristen/天主教学习的)
+// all i freaking know is that we should serve God
+// FFS why wont anyone let me code normally
+// i forgot my pak book at school nooooooooo ERROR_MESSAGE
+//
+class ReactivityCheck {
+
+    private String chem1;
+    private String chem2;
+    private String[] PLC = {
+        "K",
+        "Na",
+        "Ca",
+        "Mg",
+        "Al",
+        "C",
+        "Zn",
+        "Fe",
+        "Sn",
+        "Pb",
+        "H",
+        "Cu",
+        "Ag",
+        "Au",
+    };
+
+    public String compare(String a, String b) {
+        int c1 = 0;
+        int c2 = 0;
+
+        while (!PLC[c1].equals(a)) {
+            c1 += 1;
+        }
+        while (!PLC[c2].equals(b)) {
+            c2 += 1;
+        }
+        int highest;
+        if (c1 > c2) {
+            highest = c1;
+        } else if (c1 < c2) {
+            highest = c2;
+        } else {
+            highest = c1;
+        }
+
+        return PLC[highest];
+    }
+}
+
 // ============================================
-// CELESTIAL ENGINE
+// CELESTIAL ENGINE (Too complex ill  implement it later :P)
 // ============================================
 
 class CelestialBody {
