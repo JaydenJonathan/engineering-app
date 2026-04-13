@@ -623,6 +623,7 @@ public class ToolboxApp {
         leftPanel.add(Box.createRigidArea(new Dimension(0, 20)));
 
         // Buttons
+        JButton btnCmpr = new JButton("Chemical Comparator");
         JButton btnCircuit = new JButton("⚡ Circuit Editor");
         JButton btnGraph = new JButton("📈 Grapher");
         JButton btnPhysics = new JButton("⚙️ Physics Engine");
@@ -657,6 +658,11 @@ public class ToolboxApp {
         rightPanel.setBackground(Color.WHITE);
 
         // === PHYSICS ENGINE ACTION ===
+        btnComparison.addActionListener(george -> {
+            contextLabel.setText("Comparator Chemical");
+            middlePanel.removeAll();
+            middlePanel.add(Box.createRigidArea(new Dimension(0, 20)));
+        })
         btnPhysics.addActionListener(e -> {
             contextLabel.setText("⚙️ PHYSICS ENGINE");
             middlePanel.removeAll();
