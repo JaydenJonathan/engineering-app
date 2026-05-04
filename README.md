@@ -15,4 +15,8 @@ regards, Jayden Jonathan
 anyhow for the meantime, please enjoy
 
 
+no one is helping me with this project
+where did everyone go
+
+
 - regards, Jayden Jonatham
