@@ -21,8 +21,6 @@ import javax.swing.*;
 //
 class ReactivityCheck {
 
-    private String chem1;
-    private String chem2;
     private String[] PLC = {
         "K",
         "Na",
@@ -41,25 +39,28 @@ class ReactivityCheck {
     };
 
     public String compare(String a, String b) {
-        int c1 = 0;
-        int c2 = 0;
+        int indexA = -1;
+        int indexB = -1;
 
-        while (!PLC[c1].equals(a)) {
-            c1 += 1;
+        // Find indices
+        for (int i = 0; i < PLC.length; i++) {
+            if (PLC[i].equals(a)) indexA = i;
+            if (PLC[i].equals(b)) indexB = i;
         }
-        while (!PLC[c2].equals(b)) {
-            c2 += 1;
+
+        // If element not found, return null
+        if (indexA == -1 || indexB == -1) {
+            return null;
         }
-        int highest;
-        if (c1 > c2) {
-            highest = c1;
-        } else if (c1 < c2) {
-            highest = c2;
+
+        // Lower index = more reactive
+        if (indexA < indexB) {
+            return a + " is more reactive than " + b;
+        } else if (indexB < indexA) {
+            return b + " is more reactive than " + a;
         } else {
-            highest = c1;
+            return a + " and " + b + " have equal reactivity";
         }
-
-        return PLC[highest];
     }
 }
 
@@ -629,7 +630,13 @@ public class ToolboxApp {
         JButton btnPhysics = new JButton("⚙️ Physics Engine");
         JButton btnQuad = new JButton("x² Quadratics");
 
-        JButton[] buttons = { btnCircuit, btnGraph, btnPhysics, btnQuad };
+        JButton[] buttons = {
+            btnCircuit,
+            btnGraph,
+            btnPhysics,
+            btnQuad,
+            btnCmpr,
+        };
         for (JButton b : buttons) {
             b.setFont(new Font("SansSerif", Font.PLAIN, 13));
             b.setMaximumSize(new Dimension(180, 40));
@@ -658,11 +665,133 @@ public class ToolboxApp {
         rightPanel.setBackground(Color.WHITE);
 
         // === PHYSICS ENGINE ACTION ===
-        btnComparison.addActionListener(george -> {
-            contextLabel.setText("Comparator Chemical");
+
+        btnCmpr.addActionListener(f -> {
+            contextLabel.setText("🧪 CHEMICAL COMPARATOR");
             middlePanel.removeAll();
+            rightPanel.removeAll();
             middlePanel.add(Box.createRigidArea(new Dimension(0, 20)));
-        })
+
+            JLabel lbl = new JLabel("🧪 Reactivity Series Comparator");
+            lbl.setFont(new Font("SansSerif", Font.BOLD, 14));
+            lbl.setAlignmentX(Component.CENTER_ALIGNMENT);
+            middlePanel.add(lbl);
+            middlePanel.add(Box.createRigidArea(new Dimension(0, 30)));
+
+            // Element 1 selector
+            JLabel lbl1 = new JLabel("Element 1:");
+            lbl1.setAlignmentX(Component.CENTER_ALIGNMENT);
+            middlePanel.add(lbl1);
+
+            String[] elements = {
+                "K",
+                "Na",
+                "Ca",
+                "Mg",
+                "Al",
+                "C",
+                "Zn",
+                "Fe",
+                "Sn",
+                "Pb",
+                "H",
+                "Cu",
+                "Ag",
+                "Au",
+            };
+            JComboBox<String> elem1 = new JComboBox<>(elements);
+            elem1.setMaximumSize(new Dimension(120, 30));
+            elem1.setAlignmentX(Component.CENTER_ALIGNMENT);
+            middlePanel.add(elem1);
+            middlePanel.add(Box.createRigidArea(new Dimension(0, 15)));
+
+            // Element 2 selector
+            JLabel lbl2 = new JLabel("Element 2:");
+            lbl2.setAlignmentX(Component.CENTER_ALIGNMENT);
+            middlePanel.add(lbl2);
+
+            JComboBox<String> elem2 = new JComboBox<>(elements);
+            elem2.setMaximumSize(new Dimension(120, 30));
+            elem2.setAlignmentX(Component.CENTER_ALIGNMENT);
+            middlePanel.add(elem2);
+            middlePanel.add(Box.createRigidArea(new Dimension(0, 25)));
+
+            // Compare button
+            JButton btnCompare = new JButton("🔬 COMPARE");
+            btnCompare.setAlignmentX(Component.CENTER_ALIGNMENT);
+            btnCompare.setMaximumSize(new Dimension(150, 40));
+
+            // Result label
+            JLabel resultLabel = new JLabel(" ");
+            resultLabel.setFont(new Font("SansSerif", Font.BOLD, 13));
+            resultLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+            btnCompare.addActionListener(ev -> {
+                ReactivityCheck rc = new ReactivityCheck();
+                String e1 = (String) elem1.getSelectedItem();
+                String e2 = (String) elem2.getSelectedItem();
+                String result = rc.compare(e1, e2);
+
+                if (result != null) {
+                    resultLabel.setText(result);
+                } else {
+                    resultLabel.setText("⚠️ Element not found!");
+                }
+
+                // Also show in right panel
+                JPanel resultPanel = new JPanel();
+                resultPanel.setLayout(
+                    new BoxLayout(resultPanel, BoxLayout.Y_AXIS)
+                );
+                resultPanel.setBackground(new Color(30, 30, 40));
+
+                JLabel titleLabel = new JLabel("⚡ REACTIVITY RESULT ⚡");
+                titleLabel.setFont(new Font("Monospaced", Font.BOLD, 16));
+                titleLabel.setForeground(Color.CYAN);
+                titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+                JLabel resultDisplay = new JLabel(result);
+                resultDisplay.setFont(new Font("Monospaced", Font.PLAIN, 14));
+                resultDisplay.setForeground(Color.WHITE);
+                resultDisplay.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+                // Show reactivity series as reference
+                JLabel seriesLabel = new JLabel(
+                    "Most Reactive → Least Reactive"
+                );
+                seriesLabel.setFont(new Font("Monospaced", Font.PLAIN, 10));
+                seriesLabel.setForeground(Color.GRAY);
+                seriesLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+                JLabel seriesValues = new JLabel(
+                    "K Na Ca Mg Al C Zn Fe Sn Pb H Cu Ag Au"
+                );
+                seriesValues.setFont(new Font("Monospaced", Font.PLAIN, 10));
+                seriesValues.setForeground(new Color(150, 150, 200));
+                seriesValues.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+                resultPanel.add(Box.createRigidArea(new Dimension(0, 50)));
+                resultPanel.add(titleLabel);
+                resultPanel.add(Box.createRigidArea(new Dimension(0, 30)));
+                resultPanel.add(resultDisplay);
+                resultPanel.add(Box.createRigidArea(new Dimension(0, 40)));
+                resultPanel.add(seriesLabel);
+                resultPanel.add(seriesValues);
+
+                rightPanel.removeAll();
+                rightPanel.add(resultPanel, BorderLayout.CENTER);
+                rightPanel.revalidate();
+                rightPanel.repaint();
+            });
+
+            middlePanel.add(btnCompare);
+            middlePanel.add(Box.createRigidArea(new Dimension(0, 20)));
+            middlePanel.add(resultLabel);
+
+            middlePanel.revalidate();
+            middlePanel.repaint();
+        });
+
         btnPhysics.addActionListener(e -> {
             contextLabel.setText("⚙️ PHYSICS ENGINE");
             middlePanel.removeAll();
