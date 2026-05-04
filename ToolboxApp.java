@@ -1,12 +1,17 @@
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.AffineTransform;
+import java.io.*;
+import java.nio.file.*;
+import java.util.ArrayList;
 import java.util.ArrayList;
 import java.util.Dictionary;
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Random;
 import javax.swing.*;
+import javax.swing.JFileChooser;
+import javax.swing.filechooser.FileNameExtensionFilter;
 
 // Timer will be javax.swing.Timer automatically
 
@@ -104,6 +109,92 @@ class CelestialBody {
         // LOGIC: Newton's Second Law (a = F / m)
         this.vx += fx / this.mass;
         this.vy += fy / this.mass;
+    }
+}
+
+class CSVPlotter {
+
+    // Reads a CSV with two columns (x,y) and returns double arrays
+    public static double[][] readCSV(File file) throws IOException {
+        ArrayList<Double> xList = new ArrayList<>();
+        ArrayList<Double> yList = new ArrayList<>();
+
+        BufferedReader reader = new BufferedReader(new FileReader(file));
+        String line;
+        boolean firstLine = true;
+
+        while ((line = reader.readLine()) != null) {
+            // Skip empty lines
+            if (line.trim().isEmpty()) continue;
+
+            // Skip header if present (optional)
+            if (
+                firstLine &&
+                line.toLowerCase().contains("x") &&
+                line.toLowerCase().contains("y")
+            ) {
+                firstLine = false;
+                continue;
+            }
+            firstLine = false;
+
+            String[] parts = line.split(",");
+            if (parts.length >= 2) {
+                try {
+                    double x = Double.parseDouble(parts[0].trim());
+                    double y = Double.parseDouble(parts[1].trim());
+                    xList.add(x);
+                    yList.add(y);
+                } catch (NumberFormatException e) {
+                    // Skip non-numeric lines
+                }
+            }
+        }
+        reader.close();
+
+        // Convert to primitive arrays
+        double[] xArr = new double[xList.size()];
+        double[] yArr = new double[yList.size()];
+        for (int i = 0; i < xList.size(); i++) {
+            xArr[i] = xList.get(i);
+            yArr[i] = yList.get(i);
+        }
+        return new double[][] { xArr, yArr };
+    }
+
+    // Automatically scales data to fit the graph panel's range (-20 to +20)
+    public static double[][] autoScale(double[] xRaw, double[] yRaw) {
+        // Find min/max
+        double xMin = xRaw[0],
+            xMax = xRaw[0];
+        double yMin = yRaw[0],
+            yMax = yRaw[0];
+        for (int i = 1; i < xRaw.length; i++) {
+            if (xRaw[i] < xMin) xMin = xRaw[i];
+            if (xRaw[i] > xMax) xMax = xRaw[i];
+            if (yRaw[i] < yMin) yMin = yRaw[i];
+            if (yRaw[i] > yMax) yMax = yRaw[i];
+        }
+
+        // Scale to fit -20..20 range
+        double xRange = Math.max(Math.abs(xMin), Math.abs(xMax));
+        double yRange = Math.max(Math.abs(yMin), Math.abs(yMax));
+        double scale = Math.max(xRange, yRange) / 20.0;
+
+        if (scale == 0) scale = 1;
+
+        double[] xScaled = new double[xRaw.length];
+        double[] yScaled = new double[yRaw.length];
+        for (int i = 0; i < xRaw.length; i++) {
+            xScaled[i] = xRaw[i] / scale;
+            yScaled[i] = yRaw[i] / scale;
+            // Clamp to -20..20
+            if (xScaled[i] > 20) xScaled[i] = 20;
+            if (xScaled[i] < -20) xScaled[i] = -20;
+            if (yScaled[i] > 20) yScaled[i] = 20;
+            if (yScaled[i] < -20) yScaled[i] = -20;
+        }
+        return new double[][] { xScaled, yScaled };
     }
 }
 
@@ -629,6 +720,7 @@ public class ToolboxApp {
         JButton btnGraph = new JButton("📈 Grapher");
         JButton btnPhysics = new JButton("⚙️ Physics Engine");
         JButton btnQuad = new JButton("x² Quadratics");
+        JButton btnCSV = new JButton("📊 CSV Plotter");
 
         JButton[] buttons = {
             btnCircuit,
@@ -636,6 +728,7 @@ public class ToolboxApp {
             btnPhysics,
             btnQuad,
             btnCmpr,
+            btnCSV,
         };
         for (JButton b : buttons) {
             b.setFont(new Font("SansSerif", Font.PLAIN, 13));
@@ -665,6 +758,74 @@ public class ToolboxApp {
         rightPanel.setBackground(Color.WHITE);
 
         // === PHYSICS ENGINE ACTION ===
+        btnCSV.addActionListener(e -> {
+            contextLabel.setText("📁 CSV DATA PLOTTER");
+            middlePanel.removeAll();
+
+            // Create file chooser
+            JFileChooser fileChooser = new JFileChooser();
+            fileChooser.setDialogTitle("Select CSV file with x,y columns");
+            fileChooser.setFileFilter(
+                new FileNameExtensionFilter("CSV files", "csv")
+            );
+
+            int result = fileChooser.showOpenDialog(frame);
+            if (result == JFileChooser.APPROVE_OPTION) {
+                File selectedFile = fileChooser.getSelectedFile();
+                try {
+                    double[][] data = CSVPlotter.readCSV(selectedFile);
+                    double[] xRaw = data[0];
+                    double[] yRaw = data[1];
+
+                    if (xRaw.length == 0) {
+                        JOptionPane.showMessageDialog(
+                            frame,
+                            "No valid data found in CSV!"
+                        );
+                        return;
+                    }
+
+                    // Auto-scale to fit graph
+                    double[][] scaled = CSVPlotter.autoScale(xRaw, yRaw);
+                    double[] xScaled = scaled[0];
+                    double[] yScaled = scaled[1];
+
+                    // Plot on GraphPanel
+                    GraphPanel gp = new GraphPanel();
+                    rightPanel.removeAll();
+                    rightPanel.add(gp, BorderLayout.CENTER);
+                    rightPanel.revalidate();
+                    rightPanel.repaint();
+                    gp.plotData(xScaled, yScaled);
+
+                    // Show info in middle panel
+                    middlePanel.removeAll();
+                    middlePanel.add(Box.createRigidArea(new Dimension(0, 20)));
+                    JLabel info = new JLabel(
+                        "📈 Plotted: " + xRaw.length + " points"
+                    );
+                    info.setFont(new Font("SansSerif", Font.BOLD, 12));
+                    info.setAlignmentX(Component.CENTER_ALIGNMENT);
+                    middlePanel.add(info);
+                    JLabel fileLabel = new JLabel(
+                        "File: " + selectedFile.getName()
+                    );
+                    fileLabel.setFont(new Font("Monospaced", Font.PLAIN, 10));
+                    fileLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+                    middlePanel.add(fileLabel);
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(
+                        frame,
+                        "Error reading file:\n" + ex.getMessage(),
+                        "Error",
+                        JOptionPane.ERROR_MESSAGE
+                    );
+                }
+            }
+
+            middlePanel.revalidate();
+            middlePanel.repaint();
+        });
 
         btnCmpr.addActionListener(f -> {
             contextLabel.setText("🧪 CHEMICAL COMPARATOR");
