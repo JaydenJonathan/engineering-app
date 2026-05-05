@@ -24,6 +24,373 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 // FFS why wont anyone let me code normally
 // i forgot my pak book at school nooooooooo ERROR_MESSAGE
 //
+
+// ============================================
+// ROCKET STABILITY CALCULATOR PANEL
+// ============================================
+class RocketStabilityPanel extends JPanel {
+
+    private JTextField noseLenField, bodyLenField, diamField, finAreaField;
+    private JTextField noseWeightField, bodyWeightField, finWeightField, motorWeightField;
+    private JLabel cgLabel, cpLabel, marginLabel, statusLabel;
+    private RocketDiagramPanel diagram;
+
+    public RocketStabilityPanel() {
+        setLayout(new BorderLayout());
+        setBackground(new Color(30, 30, 40));
+
+        // Left panel: inputs
+        JPanel inputPanel = new JPanel(new GridLayout(0, 2, 10, 10));
+        inputPanel.setBackground(new Color(30, 30, 40));
+        inputPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+        // Dimensions
+        addInputRow(
+            inputPanel,
+            "Nose Length (cm):",
+            noseLenField = new JTextField("15")
+        );
+        addInputRow(
+            inputPanel,
+            "Body Length (cm):",
+            bodyLenField = new JTextField("60")
+        );
+        addInputRow(
+            inputPanel,
+            "Body Diameter (cm):",
+            diamField = new JTextField("5")
+        );
+        addInputRow(
+            inputPanel,
+            "Fin Area (cm²):",
+            finAreaField = new JTextField("30")
+        );
+        inputPanel.add(new JLabel(" "));
+        inputPanel.add(new JLabel(" "));
+
+        // Weights
+        addInputRow(
+            inputPanel,
+            "Nose Weight (g):",
+            noseWeightField = new JTextField("30")
+        );
+        addInputRow(
+            inputPanel,
+            "Body Weight (g):",
+            bodyWeightField = new JTextField("80")
+        );
+        addInputRow(
+            inputPanel,
+            "Fin Weight (g):",
+            finWeightField = new JTextField("20")
+        );
+        addInputRow(
+            inputPanel,
+            "Motor Weight (g):",
+            motorWeightField = new JTextField("50")
+        );
+
+        // Calculate button
+        JButton calcButton = new JButton("🚀 CALCULATE STABILITY");
+        calcButton.addActionListener(e -> calculateStability());
+
+        // Results panel
+        JPanel resultPanel = new JPanel(new GridLayout(4, 1, 10, 10));
+        resultPanel.setBackground(new Color(30, 30, 40));
+        resultPanel.setBorder(BorderFactory.createEmptyBorder(10, 20, 20, 20));
+        cgLabel = createResultLabel("CG: -- cm");
+        cpLabel = createResultLabel("CP: -- cm");
+        marginLabel = createResultLabel("Static Margin: -- cal");
+        statusLabel = createResultLabel("Status: --");
+        statusLabel.setFont(new Font("SansSerif", Font.BOLD, 16));
+        resultPanel.add(cgLabel);
+        resultPanel.add(cpLabel);
+        resultPanel.add(marginLabel);
+        resultPanel.add(statusLabel);
+
+        // Diagram panel (right side)
+        diagram = new RocketDiagramPanel();
+        diagram.setPreferredSize(new Dimension(200, 400));
+        diagram.setBackground(new Color(20, 20, 30));
+
+        // Assemble left side
+        JPanel leftPanel = new JPanel(new BorderLayout());
+        leftPanel.add(inputPanel, BorderLayout.CENTER);
+        leftPanel.add(calcButton, BorderLayout.SOUTH);
+
+        add(leftPanel, BorderLayout.WEST);
+        add(diagram, BorderLayout.CENTER);
+        add(resultPanel, BorderLayout.SOUTH);
+    }
+
+    private void addInputRow(JPanel panel, String label, JTextField field) {
+        JLabel lbl = new JLabel(label);
+        lbl.setForeground(Color.WHITE);
+        panel.add(lbl);
+        panel.add(field);
+    }
+
+    private JLabel createResultLabel(String text) {
+        JLabel label = new JLabel(text);
+        label.setForeground(Color.CYAN);
+        label.setFont(new Font("Monospaced", Font.PLAIN, 14));
+        return label;
+    }
+
+    private void calculateStability() {
+        try {
+            // Parse inputs
+            double noseLen = Double.parseDouble(noseLenField.getText());
+            double bodyLen = Double.parseDouble(bodyLenField.getText());
+            double diam = Double.parseDouble(diamField.getText());
+            double finArea = Double.parseDouble(finAreaField.getText());
+            double noseW = Double.parseDouble(noseWeightField.getText());
+            double bodyW = Double.parseDouble(bodyWeightField.getText());
+            double finW = Double.parseDouble(finWeightField.getText());
+            double motorW = Double.parseDouble(motorWeightField.getText());
+
+            // Assume CG of each part is at its center (simplified)
+            // Coordinate origin at nose tip
+            double noseCG = noseLen / 2;
+            double bodyCG = noseLen + (bodyLen / 2);
+            double finCG = noseLen + bodyLen - (bodyLen * 0.1); // Fins near rear
+            double motorCG = noseLen + bodyLen - 5; // Motor at very rear
+
+            double totalWeight = noseW + bodyW + finW + motorW;
+            double totalMoment =
+                (noseW * noseCG) +
+                (bodyW * bodyCG) +
+                (finW * finCG) +
+                (motorW * motorCG);
+            double cg = totalMoment / totalWeight; // Center of Gravity from nose tip
+
+            // Center of Pressure (simplified Barrowman)
+            // CP = 1/3 of body length from base for low speeds, plus fin effect
+            double cpBody = noseLen + ((bodyLen * 2.0) / 3.0); // Approx 66% from nose tip
+            double finFactor = finArea / (diam * diam * 10); // Empirically derived
+            double cp = cpBody - (finFactor * 30); // Fins move CP rearward (stabilizing)
+            if (cp < noseLen) cp = noseLen; // Cannot be in nose cone
+            if (cp > noseLen + bodyLen) cp = noseLen + bodyLen;
+
+            double staticMargin = (cp - cg) / diam; // In calibers (1 cal = 1 diameter)
+
+            // Update labels
+            cgLabel.setText(String.format("CG: %.1f cm from nose", cg));
+            cpLabel.setText(String.format("CP: %.1f cm from nose", cp));
+            marginLabel.setText(
+                String.format("Static Margin: %.2f cal", staticMargin)
+            );
+
+            // Determine stability
+            String status;
+            Color statusColor;
+            if (staticMargin < 0.5) {
+                status =
+                    "🔴 UNSTABLE (Add more weight to nose or enlarge fins)";
+                statusColor = Color.RED;
+            } else if (staticMargin < 1.0) {
+                status =
+                    "🟡 MARGINAL (OK for low power, add nose weight for safety)";
+                statusColor = Color.YELLOW;
+            } else if (staticMargin <= 2.0) {
+                status = "🟢 STABLE (Good flight characteristics)";
+                statusColor = Color.GREEN;
+            } else {
+                status = "🟣 OVERSTABLE (May weathercock into wind)";
+                statusColor = Color.MAGENTA;
+            }
+            statusLabel.setText("Status: " + status);
+            statusLabel.setForeground(statusColor);
+
+            // Update diagram
+            diagram.setCGandCP(cg, cp, diam, noseLen + bodyLen);
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(
+                this,
+                "Enter valid numbers!",
+                "Error",
+                JOptionPane.ERROR_MESSAGE
+            );
+        }
+    }
+
+    // Inner class for drawing rocket diagram
+    // Inner class for drawing rocket diagram (VERTICAL)
+    class RocketDiagramPanel extends JPanel {
+
+        private double cg = 50,
+            cp = 50,
+            totalLen = 100,
+            diam = 5;
+
+        public void setCGandCP(
+            double cg,
+            double cp,
+            double diam,
+            double totalLen
+        ) {
+            this.cg = cg;
+            this.cp = cp;
+            this.totalLen = totalLen;
+            this.diam = diam;
+            repaint();
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            Graphics2D g2d = (Graphics2D) g;
+            g2d.setRenderingHint(
+                RenderingHints.KEY_ANTIALIASING,
+                RenderingHints.VALUE_ANTIALIAS_ON
+            );
+
+            int width = getWidth();
+            int height = getHeight();
+
+            // Leave margins
+            int leftMargin = 60;
+            int rightMargin = 60;
+            int topMargin = 40;
+            int bottomMargin = 60;
+
+            int drawingWidth = width - leftMargin - rightMargin;
+            int drawingHeight = height - topMargin - bottomMargin;
+
+            // Scale: rocket width from diameter, rocket height from total length
+            double maxRocketWidth = drawingWidth * 0.8; // leave space for fins
+            double pixelPerCmWidth = maxRocketWidth / (diam * 2); // diameter twice? actually rocket body width = diam
+            double bodyWidthPx = diam * pixelPerCmWidth;
+            if (bodyWidthPx < 8) bodyWidthPx = 8;
+
+            double pixelPerCmHeight = drawingHeight / totalLen;
+            double rocketHeightPx = totalLen * pixelPerCmHeight;
+
+            // Center horizontally
+            int rocketCenterX = width / 2;
+            int bodyLeftX = rocketCenterX - (int) (bodyWidthPx / 2);
+            int bodyRightX = rocketCenterX + (int) (bodyWidthPx / 2);
+
+            // Rocket bottom Y (fins touch bottom)
+            int rocketBottomY = height - bottomMargin;
+            int rocketTopY = rocketBottomY - (int) rocketHeightPx;
+
+            // ---- Draw body tube (rectangle) ----
+            g2d.setColor(new Color(180, 180, 200));
+            g2d.fillRect(
+                bodyLeftX,
+                rocketTopY,
+                bodyRightX - bodyLeftX,
+                (int) rocketHeightPx
+            );
+            g2d.setColor(Color.BLACK);
+            g2d.drawRect(
+                bodyLeftX,
+                rocketTopY,
+                bodyRightX - bodyLeftX,
+                (int) rocketHeightPx
+            );
+
+            // ---- Draw nose cone (triangle on top) ----
+            int noseBaseY = rocketTopY;
+            int noseTipY = noseBaseY - (int) (0.2 * rocketHeightPx); // nose is 20% of length
+            int[] noseX = { bodyLeftX, bodyRightX, rocketCenterX };
+            int[] noseY = { noseBaseY, noseBaseY, noseTipY };
+            g2d.setColor(new Color(120, 120, 220));
+            g2d.fillPolygon(noseX, noseY, 3);
+            g2d.setColor(Color.BLACK);
+            g2d.drawPolygon(noseX, noseY, 3);
+
+            // ---- Draw fins (at bottom, more realistic) ----
+            int finBaseY = rocketBottomY;
+            int finHeight = (int) (rocketHeightPx * 0.15);
+            int finWidth = (int) (bodyWidthPx * 1.2);
+            // Left fin
+            // Left fin (trapezoid: wider at bottom, swept back)
+            int[] leftFinX = { bodyLeftX, bodyLeftX, bodyLeftX - finWidth };
+            int[] leftFinY = { finBaseY, finBaseY - finHeight, finBaseY + 5 };
+
+            // Right fin (triangle pointing right and down)
+            int[] rightFinX = { bodyRightX, bodyRightX, bodyRightX + finWidth };
+            int[] rightFinY = { finBaseY, finBaseY - finHeight, finBaseY + 5 };
+
+            g2d.setColor(new Color(150, 150, 200));
+            g2d.fillPolygon(leftFinX, leftFinY, 3);
+            g2d.drawPolygon(leftFinX, leftFinY, 3);
+            // Right fin
+            g2d.fillPolygon(rightFinX, rightFinY, 3);
+            g2d.drawPolygon(rightFinX, rightFinY, 3);
+            // Center fin (optional, facing viewer)
+            int[] centerFinX = {
+                rocketCenterX - 3,
+                rocketCenterX + 3,
+                rocketCenterX,
+            };
+            int[] centerFinY = { finBaseY, finBaseY, finBaseY - finHeight };
+            g2d.fillPolygon(centerFinX, centerFinY, 3);
+            g2d.drawPolygon(centerFinX, centerFinY, 3);
+
+            // ---- Mark CG (green circle) ----
+            double cgFraction = cg / totalLen; // from nose tip
+            int cgY = rocketTopY + (int) (rocketHeightPx * cgFraction);
+            g2d.setColor(Color.GREEN);
+            g2d.fillOval(rocketCenterX - 6, cgY - 6, 12, 12);
+            g2d.setColor(Color.BLACK);
+            g2d.drawString("CG", rocketCenterX - 4, cgY + 4);
+
+            // ---- Mark CP (red circle) ----
+            double cpFraction = cp / totalLen;
+            int cpY = rocketTopY + (int) (rocketHeightPx * cpFraction);
+            g2d.setColor(Color.RED);
+            g2d.fillOval(rocketCenterX - 6, cpY - 6, 12, 12);
+            g2d.setColor(Color.WHITE);
+            g2d.drawString("CP", rocketCenterX - 4, cpY + 4);
+
+            // Draw a line between CG and CP if they are not too close
+            g2d.setColor(Color.YELLOW);
+            g2d.setStroke(new BasicStroke(1.5f));
+            g2d.drawLine(rocketCenterX + 8, cgY, rocketCenterX + 8, cpY);
+
+            int nozzleWidth = (int) (bodyWidthPx * 0.6);
+            int nozzleHeight = (int) (rocketHeightPx * 0.08);
+            int nozzleLeft = rocketCenterX - nozzleWidth / 2;
+            int nozzleTop = rocketBottomY; // directly below body tube
+            g2d.setColor(new Color(50, 50, 50));
+            g2d.fillRoundRect(
+                nozzleLeft,
+                nozzleTop,
+                nozzleWidth,
+                nozzleHeight,
+                6,
+                6
+            );
+            g2d.setColor(Color.BLACK);
+            g2d.drawRoundRect(
+                nozzleLeft,
+                nozzleTop,
+                nozzleWidth,
+                nozzleHeight,
+                6,
+                6
+            );
+
+            // Optional: engine glow (orange/yellow)
+            g2d.setColor(new Color(255, 150, 50, 180)); // semi-transparent orange
+            g2d.fillOval(
+                rocketCenterX - 8,
+                nozzleTop + nozzleHeight - 2,
+                16,
+                8
+            );
+
+            // Title
+            g2d.setColor(Color.WHITE);
+            g2d.setFont(new Font("SansSerif", Font.BOLD, 12));
+            g2d.drawString("Rocket Diagram", width / 2 - 50, topMargin - 10);
+        }
+    }
+}
+
 class ReactivityCheck {
 
     private String[] PLC = {
@@ -44,28 +411,16 @@ class ReactivityCheck {
     };
 
     public String compare(String a, String b) {
-        int indexA = -1;
-        int indexB = -1;
-
-        // Find indices
+        int indexA = -1,
+            indexB = -1;
         for (int i = 0; i < PLC.length; i++) {
             if (PLC[i].equals(a)) indexA = i;
             if (PLC[i].equals(b)) indexB = i;
         }
-
-        // If element not found, return null
-        if (indexA == -1 || indexB == -1) {
-            return null;
-        }
-
-        // Lower index = more reactive
-        if (indexA < indexB) {
-            return a + " is more reactive than " + b;
-        } else if (indexB < indexA) {
-            return b + " is more reactive than " + a;
-        } else {
-            return a + " and " + b + " have equal reactivity";
-        }
+        if (indexA == -1 || indexB == -1) return null;
+        if (indexA < indexB) return a + " is more reactive than " + b;
+        if (indexB < indexA) return b + " is more reactive than " + a;
+        return a + " and " + b + " have equal reactivity";
     }
 }
 
@@ -721,7 +1076,7 @@ public class ToolboxApp {
         JButton btnPhysics = new JButton("⚙️ Physics Engine");
         JButton btnQuad = new JButton("x² Quadratics");
         JButton btnCSV = new JButton("📊 CSV Plotter");
-
+        JButton btnRocket = new JButton("rocket stability");
         JButton[] buttons = {
             btnCircuit,
             btnGraph,
@@ -729,6 +1084,7 @@ public class ToolboxApp {
             btnQuad,
             btnCmpr,
             btnCSV,
+            btnRocket,
         };
         for (JButton b : buttons) {
             b.setFont(new Font("SansSerif", Font.PLAIN, 13));
@@ -757,6 +1113,32 @@ public class ToolboxApp {
         JPanel rightPanel = new JPanel(new BorderLayout());
         rightPanel.setBackground(Color.WHITE);
 
+        btnRocket.addActionListener(e -> {
+            contextLabel.setText("🚀 ROCKET STABILITY CALCULATOR");
+            middlePanel.removeAll();
+            rightPanel.removeAll();
+
+            RocketStabilityPanel rocketPanel = new RocketStabilityPanel();
+            rightPanel.add(rocketPanel, BorderLayout.CENTER);
+            rightPanel.revalidate();
+            rightPanel.repaint();
+
+            // Add some info to middle panel
+            middlePanel.add(Box.createRigidArea(new Dimension(0, 20)));
+            JLabel info = new JLabel("📐 Enter rocket dimensions and weights");
+            info.setFont(new Font("SansSerif", Font.PLAIN, 12));
+            info.setAlignmentX(Component.CENTER_ALIGNMENT);
+            middlePanel.add(info);
+            JLabel info2 = new JLabel(
+                "🎯 Green=CG, Red=CP. Stable if CP is behind CG"
+            );
+            info2.setFont(new Font("SansSerif", Font.PLAIN, 12));
+            info2.setAlignmentX(Component.CENTER_ALIGNMENT);
+            middlePanel.add(info2);
+
+            middlePanel.revalidate();
+            middlePanel.repaint();
+        });
         // === PHYSICS ENGINE ACTION ===
         btnCSV.addActionListener(e -> {
             contextLabel.setText("📁 CSV DATA PLOTTER");
