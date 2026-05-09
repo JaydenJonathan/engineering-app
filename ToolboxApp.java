@@ -35,6 +35,129 @@ class RocketStabilityPanel extends JPanel {
     private JLabel cgLabel, cpLabel, marginLabel, statusLabel;
     private RocketDiagramPanel diagram;
 
+    private void simulateTrajectory(
+        JTextField thrustField,
+        JTextField burnField,
+        JTextField angleField
+    ) {
+        try {
+            // Get rocket parameters
+            double noseLen = Double.parseDouble(noseLenField.getText());
+            double bodyLen = Double.parseDouble(bodyLenField.getText());
+            double diam = Double.parseDouble(diamField.getText());
+            double noseW = Double.parseDouble(noseWeightField.getText());
+            double bodyW = Double.parseDouble(bodyWeightField.getText());
+            double finW = Double.parseDouble(finWeightField.getText());
+            double motorW = Double.parseDouble(motorWeightField.getText());
+
+            double thrust = Double.parseDouble(thrustField.getText());
+            double burnTime = Double.parseDouble(burnField.getText());
+            double angleDeg = Double.parseDouble(angleField.getText());
+
+            double totalMassKg = (noseW + bodyW + finW + motorW) / 1000.0;
+            double dryMass = totalMassKg - (motorW / 1000.0); // motor mass is propellant? simplified
+
+            // Launch angle
+            double rad = Math.toRadians(angleDeg);
+            double vx = 0,
+                vy = 0;
+            double x = 0,
+                y = 0;
+            double g = 9.8;
+
+            // Time step
+            double dt = 0.02;
+            ArrayList<Double> xList = new ArrayList<>();
+            ArrayList<Double> yList = new ArrayList<>();
+
+            double t = 0;
+            boolean powered = true;
+            double currentMass = totalMassKg;
+
+            while (y >= 0 || t == 0) {
+                // Compute acceleration
+                double ax = 0,
+                    ay = -g;
+                if (powered && t <= burnTime) {
+                    double thrustAcc = thrust / currentMass;
+                    ax = thrustAcc * Math.cos(rad);
+                    ay += thrustAcc * Math.sin(rad);
+                    // Burn mass flow: assume constant mass loss
+                    currentMass =
+                        totalMassKg - (totalMassKg - dryMass) * (t / burnTime);
+                    if (currentMass < dryMass) currentMass = dryMass;
+                } else {
+                    powered = false;
+                }
+
+                vx += ax * dt;
+                vy += ay * dt;
+                x += vx * dt;
+                y += vy * dt;
+                t += dt;
+
+                xList.add(x);
+                yList.add(y);
+
+                // Stop if below ground and descending
+                if (y < 0 && vy < 0) break;
+            }
+
+            // Convert to arrays
+            double[] xArr = new double[xList.size()];
+            double[] yArr = new double[yList.size()];
+            for (int i = 0; i < xList.size(); i++) {
+                xArr[i] = xList.get(i);
+                yArr[i] = yList.get(i);
+            }
+
+            // Find max height and range
+            double maxY = yArr[0];
+            for (double yv : yArr) if (yv > maxY) maxY = yv;
+            double range = xArr[xArr.length - 1];
+
+            // Show results
+            JOptionPane.showMessageDialog(
+                this,
+                String.format(
+                    "Max height: %.1f m\nRange: %.1f m\nTime of flight: %.1f s",
+                    maxY,
+                    range,
+                    t
+                ),
+                "Launch Results",
+                JOptionPane.INFORMATION_MESSAGE
+            );
+
+            // Plot using GraphPanel (reuse from your toolbox)
+            GraphPanel gp = new GraphPanel();
+            // Need to scale data to fit -20..20 range? The GraphPanel expects coordinates from -20 to 20.
+            // We'll auto-scale using CSVPlotter.autoScale (already exists!)
+            double[][] scaled = CSVPlotter.autoScale(xArr, yArr);
+            double[] xScaled = scaled[0];
+            double[] yScaled = scaled[1];
+
+            gp.plotData(xScaled, yScaled);
+
+            // Show the graph in the right panel
+            JFrame parent = (JFrame) SwingUtilities.getWindowAncestor(this);
+            JPanel rightPanel = (JPanel) (
+                (BorderLayout) parent.getContentPane().getLayout()
+            ).getLayoutComponent(BorderLayout.EAST);
+            rightPanel.removeAll();
+            rightPanel.add(gp, BorderLayout.CENTER);
+            rightPanel.revalidate();
+            rightPanel.repaint();
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(
+                this,
+                "Enter valid numbers!",
+                "Error",
+                JOptionPane.ERROR_MESSAGE
+            );
+        }
+    }
+
     public RocketStabilityPanel() {
         setLayout(new BorderLayout());
         setBackground(new Color(30, 30, 40));
@@ -90,9 +213,38 @@ class RocketStabilityPanel extends JPanel {
             motorWeightField = new JTextField("50")
         );
 
-        // Calculate button
+        // === Thrust & launch parameters (moved up!) ===
+        JLabel thrustLabel = new JLabel("Thrust (N):");
+        thrustLabel.setForeground(Color.WHITE);
+        inputPanel.add(thrustLabel);
+        JTextField thrustField = new JTextField("20");
+        inputPanel.add(thrustField);
+
+        JLabel burnLabel = new JLabel("Burn time (s):");
+        burnLabel.setForeground(Color.WHITE);
+        inputPanel.add(burnLabel);
+        JTextField burnField = new JTextField("2.0");
+        inputPanel.add(burnField);
+
+        JLabel angleLabel = new JLabel("Launch angle (°):");
+        angleLabel.setForeground(Color.WHITE);
+        inputPanel.add(angleLabel);
+        JTextField angleField = new JTextField("75");
+        inputPanel.add(angleField);
+
+        // Buttons
         JButton calcButton = new JButton("🚀 CALCULATE STABILITY");
         calcButton.addActionListener(e -> calculateStability());
+
+        JButton simButton = new JButton("📈 SIMULATE LAUNCH");
+        simButton.addActionListener(e ->
+            simulateTrajectory(thrustField, burnField, angleField)
+        );
+
+        // Button panel (both buttons together)
+        JPanel buttonPanel = new JPanel(new FlowLayout());
+        buttonPanel.add(calcButton);
+        buttonPanel.add(simButton);
 
         // Results panel
         JPanel resultPanel = new JPanel(new GridLayout(4, 1, 10, 10));
@@ -116,7 +268,7 @@ class RocketStabilityPanel extends JPanel {
         // Assemble left side
         JPanel leftPanel = new JPanel(new BorderLayout());
         leftPanel.add(inputPanel, BorderLayout.CENTER);
-        leftPanel.add(calcButton, BorderLayout.SOUTH);
+        leftPanel.add(buttonPanel, BorderLayout.SOUTH); // <-- only one addition
 
         add(leftPanel, BorderLayout.WEST);
         add(diagram, BorderLayout.CENTER);
